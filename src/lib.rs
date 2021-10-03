@@ -1,4 +1,4 @@
-//! Board support crate for the Nordic nRF52840-DK
+//! Board support crate for the Makerdiary Pitaya Go
 //!
 //! UARTE, SPIM and TWI should be functional,
 //! but might miss some features.
@@ -25,23 +25,23 @@ use nrf52840_hal::{
 
 use embedded_hal::digital::v2::{InputPin, OutputPin};
 
-/// Provides access to all features of the nRF52840-DK board
+/// Provides access to all features of the Pitaya Go board
 #[allow(non_snake_case)]
 pub struct Board {
-    /// The nRF52's pins which are not otherwise occupied on the nRF52840-DK
+    /// The nRF52's pins which are not otherwise occupied on the Pitaya Go
     pub pins: Pins,
 
-    /// The nRF52840-DK UART which is wired to the virtual USB CDC port
+    /// The Pitaya Go UART which is wired to the virtual USB CDC port
     pub cdc: Uarte<nrf52::UARTE0>,
 
-    /// The nRF52840-DK SPI which is wired to the SPI flash
+    /// The Pitaya Go SPI which is wired to the SPI flash
     pub flash: Spim<nrf52::SPIM2>,
     pub flash_cs: Pin<Output<PushPull>>,
 
-    /// The LEDs on the nRF52840-DK board
+    /// The LEDs on the Pitaya Go board
     pub leds: Leds,
 
-    /// The buttons on the nRF52840-DK board
+    /// The buttons on the Pitaya Go board
     pub buttons: Buttons,
 
     pub nfc: NFC,
@@ -263,7 +263,7 @@ pub struct Board {
 impl Board {
     /// Take the peripherals safely
     ///
-    /// This method will return an instance of `nRF52840DK` the first time it is
+    /// This method will return an instance of `Board` the first time it is
     /// called. It will return only `None` on subsequent calls.
     pub fn take() -> Option<Self> {
         Some(Self::new(CorePeripherals::take()?, Peripherals::take()?))
@@ -271,16 +271,16 @@ impl Board {
 
     /// Steal the peripherals
     ///
-    /// This method produces an instance of `nRF52840DK`, regardless of whether
+    /// This method produces an instance of `Board`, regardless of whether
     /// another instance was create previously.
     ///
     /// # Safety
     ///
-    /// This method can be used to create multiple instances of `nRF52840DK`. Those
+    /// This method can be used to create multiple instances of `Board`. Those
     /// instances can interfere with each other, causing all kinds of unexpected
     /// behavior and circumventing safety guarantees in many ways.
     ///
-    /// Always use `nRF52840DK::take`, unless you really know what you're doing.
+    /// Always use `Board::take`, unless you really know what you're doing.
     pub unsafe fn steal() -> Self {
         Self::new(CorePeripherals::steal(), Peripherals::steal())
     }
@@ -289,32 +289,32 @@ impl Board {
         let pins0 = p0::Parts::new(p.P0);
         let pins1 = p1::Parts::new(p.P1);
 
-        // The nRF52840-DK has an 64MB SPI flash on board which can be interfaced through SPI or Quad SPI.
+        // The Pitaya Go has an 64MB SPI flash on board which can be interfaced through SPI or Quad SPI.
         // As for now, only the normal SPI mode is available, so we are using this for the interface.
         let flash_spim = Spim::new(
             p.SPIM2,
             spim::Pins {
-                sck: pins0.p0_19.into_push_pull_output(Level::Low).degrade(),
-                mosi: Some(pins0.p0_20.into_push_pull_output(Level::Low).degrade()),
-                miso: Some(pins0.p0_21.into_floating_input().degrade()),
+                sck: pins1.p1_04.into_push_pull_output(Level::Low).degrade(),
+                mosi: Some(pins1.p1_06.into_push_pull_output(Level::Low).degrade()),
+                miso: Some(pins1.p1_01.into_floating_input().degrade()),
             },
             Frequency::K500,
             MODE_0,
             0,
         );
 
-        let flash_cs = pins0.p0_17.into_push_pull_output(Level::High).degrade();
+        let flash_cs = pins1.p1_03.into_push_pull_output(Level::High).degrade();
 
-        // The nRF52840-DK features an USB CDC port.
+        // The Pitaya Go features an USB CDC port.
         // It features HWFC but does not have to use it.
         // It can transmit a flexible baudrate of up to 1Mbps.
         let cdc_uart = Uarte::new(
             p.UARTE0,
             uarte::Pins {
-                txd: pins0.p0_06.into_push_pull_output(Level::High).degrade(),
-                rxd: pins0.p0_08.into_floating_input().degrade(),
-                cts: Some(pins0.p0_07.into_floating_input().degrade()),
-                rts: Some(pins0.p0_05.into_push_pull_output(Level::High).degrade()),
+                txd: pins0.p0_26.into_push_pull_output(Level::High).degrade(),
+                rxd: pins0.p0_27.into_floating_input().degrade(),
+                cts: None, // Some(pins0.p0_07.into_floating_input().degrade()),
+                rts: None, // Some(pins0.p0_05.into_push_pull_output(Level::High).degrade()),
             },
             UartParity::EXCLUDED,
             UartBaudrate::BAUD115200,
@@ -326,47 +326,35 @@ impl Board {
             flash_cs,
 
             pins: Pins {
-                P0_03: pins0.p0_03,
-                P0_04: pins0.p0_04,
-                _RESET: pins0.p0_18,
-                P0_22: pins0.p0_22,
-                P0_23: pins0.p0_23,
-                P0_26: pins0.p0_26,
-                P0_27: pins0.p0_27,
-                P0_28: pins0.p0_28,
-                P0_29: pins0.p0_29,
-                P0_30: pins0.p0_30,
-                P0_31: pins0.p0_31,
-                P1_00: pins1.p1_00,
-                P1_01: pins1.p1_01,
-                P1_02: pins1.p1_02,
-                P1_03: pins1.p1_03,
-                P1_04: pins1.p1_04,
-                P1_05: pins1.p1_05,
-                P1_06: pins1.p1_06,
-                P1_07: pins1.p1_07,
-                P1_08: pins1.p1_08,
-                P1_09: pins1.p1_09,
-                P1_10: pins1.p1_10,
-                P1_11: pins1.p1_11,
-                P1_12: pins1.p1_12,
-                P1_13: pins1.p1_13,
-                P1_14: pins1.p1_14,
-                P1_15: pins1.p1_15,
+                _RESET: pins0.p0_19,
+                P13: pins0.p0_13,
+                P14: pins0.p0_14,
+                P15: pins0.p0_15,
+                P16: pins0.p0_16,
+                P17: pins0.p0_17,
+                P20: pins0.p0_20,
+                P21: pins0.p0_21,
+                P22: pins0.p0_22,
+                P23: pins0.p0_23,
+                P24: pins0.p0_24,
+                P25: pins0.p0_25,
+                A1: pins0.p0_03,
+                A2: pins0.p0_04,
+                A3: pins0.p0_05,
+                A4: pins0.p0_28,
+                A5: pins0.p0_29,
+                A6: pins0.p0_30,
+                A7: pins0.p0_31,
             },
 
             leds: Leds {
-                led_1: Led::new(pins0.p0_13.degrade()),
-                led_2: Led::new(pins0.p0_14.degrade()),
-                led_3: Led::new(pins0.p0_15.degrade()),
-                led_4: Led::new(pins0.p0_16.degrade()),
+                led_r: Led::new(pins1.p1_10.degrade()),
+                led_g: Led::new(pins1.p1_11.degrade()),
+                led_b: Led::new(pins1.p1_12.degrade()),
             },
 
             buttons: Buttons {
-                button_1: Button::new(pins0.p0_11.degrade()),
-                button_2: Button::new(pins0.p0_12.degrade()),
-                button_3: Button::new(pins0.p0_24.degrade()),
-                button_4: Button::new(pins0.p0_25.degrade()),
+                button_1: Button::new(pins1.p1_00.degrade()),
             },
 
             nfc: NFC {
@@ -453,54 +441,38 @@ impl Board {
     }
 }
 
-/// The nRF52 pins that are available on the nRF52840DK
+/// The nRF52 pins that are available on the Pitaya Go
 #[allow(non_snake_case)]
 pub struct Pins {
-    pub P0_03: p0::P0_03<Disconnected>,
-    pub P0_04: p0::P0_04<Disconnected>,
-    _RESET: p0::P0_18<Disconnected>,
-    pub P0_22: p0::P0_22<Disconnected>,
-    pub P0_23: p0::P0_23<Disconnected>,
-    pub P0_26: p0::P0_26<Disconnected>,
-    pub P0_27: p0::P0_27<Disconnected>,
-    pub P0_28: p0::P0_28<Disconnected>,
-    pub P0_29: p0::P0_29<Disconnected>,
-    pub P0_30: p0::P0_30<Disconnected>,
-    pub P0_31: p0::P0_31<Disconnected>,
-    pub P1_00: p1::P1_00<Disconnected>,
-    pub P1_01: p1::P1_01<Disconnected>,
-    pub P1_02: p1::P1_02<Disconnected>,
-    pub P1_03: p1::P1_03<Disconnected>,
-    pub P1_04: p1::P1_04<Disconnected>,
-    pub P1_05: p1::P1_05<Disconnected>,
-    pub P1_06: p1::P1_06<Disconnected>,
-    pub P1_07: p1::P1_07<Disconnected>,
-    pub P1_08: p1::P1_08<Disconnected>,
-    pub P1_09: p1::P1_09<Disconnected>,
-    pub P1_10: p1::P1_10<Disconnected>,
-    pub P1_11: p1::P1_11<Disconnected>,
-    pub P1_12: p1::P1_12<Disconnected>,
-    pub P1_13: p1::P1_13<Disconnected>,
-    pub P1_14: p1::P1_14<Disconnected>,
-    pub P1_15: p1::P1_15<Disconnected>,
+    _RESET: p0::P0_19<Disconnected>,
+    pub P13: p0::P0_13<Disconnected>,
+    pub P14: p0::P0_14<Disconnected>,
+    pub P15: p0::P0_15<Disconnected>,
+    pub P16: p0::P0_16<Disconnected>,
+    pub P17: p0::P0_17<Disconnected>,
+    pub P20: p0::P0_20<Disconnected>,
+    pub P21: p0::P0_21<Disconnected>,
+    pub P22: p0::P0_22<Disconnected>,
+    pub P23: p0::P0_23<Disconnected>,
+    pub P24: p0::P0_24<Disconnected>,
+    pub P25: p0::P0_25<Disconnected>,
+    pub A1: p0::P0_03<Disconnected>,
+    pub A2: p0::P0_04<Disconnected>,
+    pub A3: p0::P0_05<Disconnected>,
+    pub A4: p0::P0_28<Disconnected>,
+    pub A5: p0::P0_29<Disconnected>,
+    pub A6: p0::P0_30<Disconnected>,
+    pub A7: p0::P0_31<Disconnected>,
 }
 
-/// The LEDs on the nRF52840-DK board
+/// The LEDs on the Pitaya Go board
 pub struct Leds {
-    /// nRF52840-DK: LED1, nRF52: P0.30
-    pub led_1: Led,
-
-    /// nRF52840-DK: LED2, nRF52: P0.31
-    pub led_2: Led,
-
-    /// nRF52840-DK: LED3, nRF52: P0.22
-    pub led_3: Led,
-
-    /// nRF52840-DK: LED4, nRF52: P0.14
-    pub led_4: Led,
+    pub led_r: Led,
+    pub led_g: Led,
+    pub led_b: Led,
 }
 
-/// An LED on the nRF52840-DK board
+/// An LED on the Pitaya Go board
 pub struct Led(Pin<Output<PushPull>>);
 
 impl Led {
@@ -524,22 +496,12 @@ impl Led {
     }
 }
 
-/// The Buttons on the nRF52840-DK board
+/// The Buttons on the Pitaya Go board
 pub struct Buttons {
-    /// nRF52840-DK: Button 1, nRF52: P0.30
     pub button_1: Button,
-
-    /// nRF52840-DK: Button 2, nRF52: P0.31
-    pub button_2: Button,
-
-    /// nRF52840-DK: Button 3, nRF52: P0.22
-    pub button_3: Button,
-
-    /// nRF52840-DK: Button 4, nRF52: P0.14
-    pub button_4: Button,
 }
 
-/// A Button on the nRF52840-DK board
+/// A Button on the Pitaya Go board
 pub struct Button(Pin<Input<PullUp>>);
 
 impl Button {
@@ -563,11 +525,11 @@ impl Button {
     }
 }
 
-/// The NFC pins on the nRF52840-DK board
+/// The NFC pins on the Pitaya Go board
 pub struct NFC {
-    /// nRF52840-DK: NFC1, nRF52: P0.09
+    /// Pitaya Go: NFC1, nRF52: P0.09
     pub nfc_1: p0::P0_09<Disconnected>,
 
-    /// nRF52840-DK: NFC2, nRF52: P0.10
+    /// Pitaya Go: NFC2, nRF52: P0.10
     pub nfc_2: p0::P0_10<Disconnected>,
 }

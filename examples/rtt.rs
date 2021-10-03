@@ -9,7 +9,7 @@ use cortex_m_rt::entry;
 use rtt_target::rtt_init;
 
 use nb::block;
-use nrf52840_dk_bsp::{
+use pitaya_go_bsp::{
     hal::{
         prelude::*,
         timer::{self, Timer},
@@ -73,13 +73,11 @@ fn main() -> ! {
 
             writeln!(log, "Messsge no. {}/{}", count, bytes).ok();
 
-            count += 1;
-
-            // if count & 1 == 1 {
-            //     nrf52.leds.led_2.enable();
-            // } else {
-            //     nrf52.leds.led_2.disable();
-            // }
+            if count >= u8::MAX {
+                count = 0;
+            } else {
+                count += 1;
+            }
 
             delay(&mut timer, 250_000);
         }

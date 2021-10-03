@@ -17,24 +17,18 @@ use rtt_target::{rprintln, rtt_init_print};
 
 use bsp::hal;
 use hal::pac;
-use nrf52840_dk_bsp as bsp;
+use pitaya_go_bsp as bsp;
 
 use pac::interrupt;
 
 /// A struct used to hold the resources we need
 struct Blinky {
-    /// Timer 0
     timer0: hal::Timer<pac::TIMER0, hal::timer::Periodic>,
-    /// Timer 1
     timer1: hal::Timer<pac::TIMER1, hal::timer::Periodic>,
-    /// LED 1
-    led1: bsp::Led,
-    /// LED 2
-    led2: bsp::Led,
-    /// button 2
-    button2: bsp::Button,
-    /// LED 1 state
-    led1_on: bool,
+    led_r: bsp::Led,
+    led_g: bsp::Led,
+    button: bsp::Button,
+    led_r_on: bool,
 }
 
 /// Program resources
@@ -46,7 +40,7 @@ fn main() -> ! {
     rtt_init_print!();
     // Print a message over RTT
     rprintln!("Initialize");
-    rprintln!("Press button 2 to light up LED 2");
+    rprintln!("Press button to light up green LED");
     // Configure the board perephials
     if let Some(nrf52) = bsp::Board::take() {
         // Configure the timer TIMER0 to fire every second
@@ -59,12 +53,12 @@ fn main() -> ! {
         timer1.enable_interrupt();
         let mut timer1 = timer1.into_periodic();
         timer1.start(50_000u32);
-        // Get LED 1 and turn it off
-        let mut led1 = nrf52.leds.led_1;
-        led1.disable();
-        // Get LED 2 and turn it off
-        let mut led2 = nrf52.leds.led_2;
-        led2.disable();
+        // Get red LED and turn it off
+        let mut led_r = nrf52.leds.led_r;
+        led_r.disable();
+        // Get green LED and turn it off
+        let mut led_g = nrf52.leds.led_g;
+        led_g.disable();
         // Clear timer events
         let _ = timer0.wait();
         let _ = timer1.wait();
@@ -77,10 +71,10 @@ fn main() -> ! {
         let blinky = Blinky {
             timer0,
             timer1,
-            led1,
-            led2,
-            button2: nrf52.buttons.button_2,
-            led1_on: false,
+            led_r,
+            led_g,
+            button: nrf52.buttons.button_1,
+            led_r_on: false,
         };
         // Store the Blinky struct in the static variable
         free(|cs| {
@@ -99,15 +93,15 @@ fn TIMER0() {
             // Wait and reset the timer event
             let _ = blinky.timer0.wait();
             // Check the state variable
-            if blinky.led1_on {
+            if blinky.led_r_on {
                 // Enable LED 1
-                blinky.led1.enable();
+                blinky.led_r.enable();
             } else {
                 // Disable LED 1
-                blinky.led1.disable();
+                blinky.led_r.disable();
             }
             // Update the state variable
-            blinky.led1_on = !blinky.led1_on;
+            blinky.led_r_on = !blinky.led_r_on;
         }
     });
     // Print a message over RTT
@@ -122,12 +116,12 @@ fn TIMER1() {
             // Wait and reset the timer event
             let _ = blinky.timer1.wait();
             // Check if the button is pressed
-            if blinky.button2.is_pressed() {
+            if blinky.button.is_pressed() {
                 // Enable LED 2
-                blinky.led2.enable();
+                blinky.led_g.enable();
             } else {
                 // Disable LED 2
-                blinky.led2.disable();
+                blinky.led_g.disable();
             }
         }
     });
